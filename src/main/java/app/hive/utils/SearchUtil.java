@@ -15,9 +15,8 @@ import java.io.IOException;
  * @date: 2022/7/26 22:53
  */
 public class SearchUtil implements Constant{
-
     public static String searchReason(String askQuestion, String token) {
-        String url = String.format("https://www.hive-net.cn/backend/wangke/search?token=%s&question=%s", token, askQuestion);
+        String url = String.format("https://tk.enncy.cn/query?token=%s&title=%s&more=true", token, askQuestion);
         String body;
         StringBuilder result = new StringBuilder();
         try {
@@ -33,26 +32,31 @@ public class SearchUtil implements Constant{
         } catch (JsonProcessingException e) {
             return "请求出错，请联系作者！";
         }
-        if (jsonNode.get("code").asInt() != 0 && jsonNode.get("msg") != null) return jsonNode.get("msg").asText();
+
+        if (jsonNode.get("code").asInt() != 1) {
+            return "请求出错，请联系作者！";
+        }
+
         JsonNode data = jsonNode.get("data");
-        if (data.get("reasonList").size() == 0) return null;
-        JsonNode resultList = data.get("reasonList");
+        JsonNode results = data.get("results");
+
+        if (results.size() == 0) {
+            return null;
+        }
+
         int resultCount = 0;
-        for (JsonNode node : resultList) {
-            String course = node.get("course").asText();
-            String options = "无";
-            if (node.get("type").asInt() == 1) {
-                options = node.get("options").asText();
-            }
+
+        for (JsonNode node : results) {
             String question = node.get("question").asText();
-            String reason = node.get("reason").asText();
-            String resultSingle = String.format(SINGLE_RESULT, question, options, reason, course);
+            String reason = node.get("answer").asText();
+            String resultSingle = String.format(SINGLE_RESULT, question, reason);
             result.append(resultSingle);
             resultCount++;
             if (resultCount == 3) break;
         }
-        return String.format("共匹配到%d组答案\n\n", resultCount)
+
+        return String.format("共匹配到%d组答案\n", resultCount)
                 .concat(result.toString())
-                .concat("\nInfo: 支持模糊搜索，题目复制越完整越准确");
+                .concat("Info: 支持模糊搜索，题目复制越完整越准确");
     }
 }
